@@ -39,6 +39,19 @@
     text-shadow:0 0 12px rgba(255,170,60,.6);transition:opacity .4s;opacity:0;}
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
     background:radial-gradient(ellipse at center, transparent 55%, rgba(255,30,10,.45) 100%);}
+  /* Compact HUD: keep mission, dialogue, stats and speed in separate mobile lanes. */
+  @media (max-width:600px){
+    #mission{top:18px;left:18px;right:18px;font-size:12px;line-height:1.55}
+    #mission .t{font-size:11px;line-height:1.45}
+    #mission .obj{max-width:none}
+    #toastwrap{left:18px;right:18px;bottom:88px;transform:none;display:grid;
+      grid-template-columns:72px minmax(0,1fr);align-items:end;gap:12px}
+    #portrait{width:72px;height:72px;object-fit:cover}
+    #toast{max-width:none;font-size:12px;line-height:1.35;letter-spacing:.08em;overflow-wrap:anywhere}
+    #stats{left:18px;right:18px;bottom:18px;font-size:10px;line-height:1.5}
+    #hullbar{width:min(240px,72vw);height:10px}
+    #speed{right:18px;bottom:18px;font-size:10px;line-height:1.5}
+  }
 </style>
 </head>
 <body>
