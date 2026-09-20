@@ -520,7 +520,8 @@ function say(who,line,dur){
   $('toast').innerHTML='<b style="color:#5affaa">'+who+':</b> '+line;
   $('toast').style.opacity=1; toastT=dur||4.5; AU.uiClick();
   const p=PORTRAITS[who];
-  if(p){ $('portrait').src='assets/portrait-'+p+'.png'; $('portrait').style.opacity=1; }
+  if(p){ const im=$('portrait'); im.onload=()=>{ im.style.opacity=1; }; im.onerror=()=>{ im.style.opacity=0; im.removeAttribute('src'); };
+    im.src='assets/portrait-'+p+'.png'; }
 }
 function setMissionUI(t,o){ $('mission').innerHTML = t ?
   '<div class="t">'+t+'</div><div class="obj">'+o+'</div>' : ''; }
@@ -1787,7 +1788,9 @@ if (qp.get('shot')){
       if(qp.get('mi')){ const mi=parseInt(qp.get('mi')); G.missionIndex=mi; startMission(mi); }
       player.obj.position.set(2650,300,-900); player.obj.lookAt(2650,430,-1900); }
     if(mode==='manta'){ newGame(); window.__mantaA=5.5;
-      player.obj.position.set(1400,290,-750); player.obj.lookAt(1063,250,-1058); }
+      const frameManta=()=>{ if(!manta.userData.glb){ setTimeout(frameManta,250); return; }
+        player.vel.set(0,0,0); player.obj.visible=false; bleedMon.visible=false; port.obj.visible=false; dockRing.visible=false; portExtras.visible=false; if(portBust) portBust.visible=false; document.getElementById('toastwrap').style.display='none'; window.__camTarget=()=>({obj:manta}); window.__camOffset=new THREE.Vector3(270,95,240); };
+      frameManta(); }
     if(mode==='bust'){ newGame();
       const tryB=()=>{ if(!portBust){ setTimeout(tryB,400); return; }
         player.obj.position.copy(portBust.position).add(new THREE.Vector3(95,30,95));
@@ -1824,7 +1827,8 @@ if (qp.get('shot')){
       window.__camOffset=new THREE.Vector3(parseFloat(qp.get('ox')||'150'),parseFloat(qp.get('oy')||'90'),parseFloat(qp.get('oz')||'60')); }
     if(mode==='escort'){ G.missionIndex=3; startMission(3); keys['w']=true; }
     if(mode==='ace'){ G.missionIndex=4; startMission(4); keys['w']=true; keys[' ']=true; }
-    if(mode==='station'){ G.missionIndex=5; startMission(5); keys['w']=true; keys[' ']=true; }
+    if(mode==='station'){ G.missionIndex=5; startMission(5); player.vel.set(0,0,0); player.obj.visible=false; toast('');
+      renderer.toneMappingExposure=.42; bleedMon.visible=false; manta.visible=false; mantaTrail.visible=false; mantaGlow.visible=false; if(portBust) portBust.visible=false; document.getElementById('toastwrap').style.display='none'; window.__camTarget=()=>({obj:port.obj}); window.__camOffset=new THREE.Vector3(520,285,520); }
     if(mode==='collectors'){ G.missionIndex=6; startMission(6); keys['w']=true; keys[' ']=true; }
     if(mode==='citadel'){ G.missionIndex=9; startMission(9); keys['w']=true; keys[' ']=true; }
     if(mode==='freighter'){ spawnFreighterGroup(player.obj.position.clone().add(new THREE.Vector3(150,20,260))); keys['w']=true; keys[' ']=true; }
@@ -1835,14 +1839,17 @@ if (qp.get('shot')){
       const trySpawn=()=>{
         const names=['interceptor','sentinel','cutter','freighter','port','frigate'];
         if(!names.every(n=>glbCache[n])){ setTimeout(trySpawn,300); return; }
-        const fwd=new THREE.Vector3(0,0,1).applyQuaternion(player.obj.quaternion);
-        const right=new THREE.Vector3(1,0,0).applyQuaternion(player.obj.quaternion);
-        const base=player.obj.position.clone().addScaledVector(fwd,120);
+        const fwd=new THREE.Vector3(0,0,1);
+        const right=new THREE.Vector3(1,0,0);
+        const base=new THREE.Vector3(0,0,0);
+        bleedMon.visible=false; manta.visible=false; mantaTrail.visible=false; mantaGlow.visible=false; port.obj.visible=false; dockRing.visible=false; portExtras.visible=false; if(portBust) portBust.visible=false;
         names.forEach((n,i)=>{
           const s=makeShip(n); scene.add(s);
           s.position.copy(base).addScaledVector(right,(i-2)*70);
           s.lookAt(s.position.clone().add(fwd));
         });
+        // lock the QA camera so the first lineup capture cannot inherit title/gameplay framing
+        player.vel.set(0,0,0); player.obj.visible=false; document.getElementById('toastwrap').style.display='none'; window.__camTarget=()=>({obj:{position:base}}); window.__camOffset=new THREE.Vector3(0,105,-320);
         // and the procedural equivalents above them for comparison
         names.forEach((n,i)=>{
           const s=builders[n](); scene.add(s);
@@ -1860,6 +1867,7 @@ if (qp.get('shot')){
     }
   },400);
   if(qp.get('shot')) setTimeout(()=>{
+    renderer.render(scene,camera);
     const d=document.getElementById('errbox')||(()=>{const x=document.createElement('div');x.id='errbox';document.documentElement.appendChild(x);return x})();
     d.textContent='TRIS='+renderer.info.render.triangles+' CALLS='+renderer.info.render.calls+' GLB='+JSON.stringify(Object.keys(glbCache).map(k=>k+':'+(glbCache[k]?'Y':'N')))+' ERRS='+window.__errs.slice(0,6).join(' ## ');
     d.textContent+=' CAM='+JSON.stringify(camera.position)+' PL='+JSON.stringify(player.obj.position)+' PORT='+JSON.stringify(port.obj.position);
@@ -1868,5 +1876,5 @@ if (qp.get('shot')){
       im.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:9999;object-fit:cover';
       renderer.render(scene,camera); im.src=renderer.domElement.toDataURL('image/png');
       document.body.appendChild(im); }
-  },6000);
-}
+  },parseInt(qp.get('delay')||'9000'));
+    }
